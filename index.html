@@ -4,19 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TTS Demo</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        #ttsButton { font-size: 24px; padding: 10px; border: none; background: #f0f0f0; cursor: pointer; }
-        #content { margin: 20px 0; line-height: 1.6; }
-    </style>
 </head>
 <body>
     <button id="ttsButton">🔊</button>
-    <div id="content">
-        <h1>Text to Speech Demo</h1>
-        <p>This is a sample text that will be read aloud when you click the speaker button above. The system will automatically split longer texts into manageable chunks for better speech synthesis.</p>
-    </div>
-
     <script>
 document.addEventListener('DOMContentLoaded', async () => {
   const el = {}, state = { on: false, i: 0, chunks: [] }, synth = speechSynthesis, cfg = { rate: .9, pitch: 1, volume: .8 };
