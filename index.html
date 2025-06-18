@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #ttsButton { font-size: 24px; padding: 10px; border: none; background: #f0f0f0; cursor: pointer; }
+        #content { margin: 20px 0; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <button id="ttsButton">🔊</button>
+    <div id="content">
+        <h1>Text to Speech Demo</h1>
+        <p>This is a sample text that will be read aloud when you click the speaker button above. The system will automatically split longer texts into manageable chunks for better speech synthesis.</p>
+    </div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const el = {}, state = { on: false, i: 0, chunks: [] }, synth = speechSynthesis, cfg = { rate: .9, pitch: 1, volume: .8 };
+
+  const getPrompt = async () => {
+    try {
+      const p = await window.websim?.getCurrentProject(), r = await fetch(`/api/v1/projects/${p.id}`), j = await r.json();
+      return j.site?.prompt?.text ?? j.site?.prompt ?? '';
+    } catch {
+      return document.getElementById('content').textContent;
+    }
+  };
+
+  const split = (t, m = 200) => (t.match(/[^.!?\n\r]+[.!?\n\r]*|[^.!?\n\r]+/g) || [t]).flatMap(s => {
+    const a = []; let c = s.trim();
+    while (c.length > m) { let i = c.lastIndexOf(' ', m); if (i < 0) i = m; a.push(c.slice(0, i)); c = c.slice(i).trim(); }
+    return [...a, c];
+  });
+
+  const speak = () => {
+    if (!state.on || state.i >= state.chunks.length) return stop();
+    const u = new SpeechSynthesisUtterance(state.chunks[state.i++]);
+    Object.assign(u, cfg);
+    u.onend = speak;
+    u.onerror = stop;
+    synth.speak(u);
+  };
+
+  const stop = () => { synth.cancel(); state.on = false; el.btn.textContent = '🔊'; };
+  const start = async () => {
+    stop(); state.on = true; el.btn.textContent = '⏹️';
+    state.chunks = split(await getPrompt()); state.i = 0; speak();
+  };
+
+  const script = `
+    on btn:#ttsButton
+    click toggle
+    rate 0.9 pitch 1 vol 0.8
+  `.trim().split('\n');
+
+  for (let line of script) {
+    const [cmd, ...args] = line.trim().split(' ');
+    if (cmd === 'on') el.btn = document.querySelector(args[0].split(':')[1]);
+    if (cmd === 'click') el.btn.onclick = () => state.on ? stop() : start();
+    if (cmd === 'rate') cfg.rate = +args[0];
+    if (cmd === 'pitch') cfg.pitch = +args[1];
+    if (cmd === 'vol') cfg.volume = +args[2];
+  }
+
+  document.addEventListener('click', function resume() { synth.resume(); document.removeEventListener('click', resume, true); }, true);
+  document.addEventListener('visibilitychange', () => document.hidden && state.on && stop());
+  el.btn.textContent = '🔊';
+});
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
